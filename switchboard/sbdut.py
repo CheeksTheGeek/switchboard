@@ -45,7 +45,8 @@ class AutowrapDesign(Design):
         clocks=None,
         resets=None,
         tieoffs=None,
-        filename=None
+        filename=None,
+        cycle_sync: bool = False
     ):
 
         super().__init__("AutowrapDesign")
@@ -65,12 +66,17 @@ class AutowrapDesign(Design):
             filename=filename
         )
 
-        from switchboard.verilog.sim.switchboard_sim import SwitchboardSim
+        if cycle_sync:
+            from switchboard.verilog.sim.switchboard_sim_sync import SwitchboardSimSync
+            sim_design = SwitchboardSimSync()
+        else:
+            from switchboard.verilog.sim.switchboard_sim import SwitchboardSim
+            sim_design = SwitchboardSim()
 
         with self.active_fileset(fileset):
             self.set_topmodule("testbench")
             self.add_depfileset(design)
-            self.add_depfileset(SwitchboardSim())
+            self.add_depfileset(sim_design)
             self.add_file(str(filename))
 
 
@@ -107,7 +113,8 @@ class SbDut(Sim):
         args=None,
         subcomponent=False,
         suffix=None,
-        threads=None
+        threads=None,
+        cycle_sync: bool = False
     ):
 
         super().__init__(design)
@@ -168,6 +175,7 @@ class SbDut(Sim):
         self.start_delay = start_delay
 
         self.threads = threads
+        self.cycle_sync = cycle_sync
 
         self.timeunit = timeunit
         self.timeprecision = timeprecision
@@ -333,7 +341,8 @@ class SbDut(Sim):
                 clocks=self.clocks,
                 resets=self.resets,
                 tieoffs=self.tieoffs,
-                filename=filename
+                filename=filename,
+                cycle_sync=self.cycle_sync
             )
 
             self.set_design(wrapped_design)
